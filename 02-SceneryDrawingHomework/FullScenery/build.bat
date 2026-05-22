@@ -1,0 +1,2 @@
+cl.exe /c /EHsc /I C:\freeglut\include FullScenery.cpp Waves.cpp Fence.cpp Grass.cpp House.cpp Stars.cpp WildTree.cpp SMBDrawingMath.cpp
+link.exe  FullScenery.obj Fence.obj Waves.obj House.obj Grass.obj Stars.obj WildTree.obj SMBDrawingMath.obj /LIBPATH:C:\freeglut\lib\x64 freeglut.lib /SUBSYSTEM:CONSOLE
