@@ -105,15 +105,17 @@ void display(void)
 
 void keyboard(unsigned char key, int x, int y)
 {
-	bool postRedislay = false;
+	bool postRedislay = true;
 	// code
 	switch (key)
 	{
 	case 27:
 		glutLeaveMainLoop();
+		postRedislay = false;	// not needed
 		break;
 	case 'f':
 	case 'F':
+		postRedislay = false;	// happens as the window dimension changes
 		if (bIsFullScreen)
 		{
 			glutLeaveFullScreen();
@@ -128,30 +130,24 @@ void keyboard(unsigned char key, int x, int y)
 	case 'w':
 	case 'W':
 		y_translation = y_translation + TRANSLATION_STEP;
-		postRedislay = true;
 		break;
 	case 'a':
 	case 'A':
 		x_translation = x_translation - TRANSLATION_STEP;
-		postRedislay = true;
 		break;
 	case 's':
 	case 'S':
 		y_translation = y_translation - TRANSLATION_STEP;
-		postRedislay = true;
 		break;
 	case 'd':
 	case 'D':
 		x_translation = x_translation + TRANSLATION_STEP;
-		postRedislay = true;
 		break;
 	case '+':
 		scaling_base = scaling_base + (SCALING_STEP * 100.0f);
-		postRedislay = true;
 		break;
 	case '-':
 		scaling_base = scaling_base - (SCALING_STEP * 100.0f);
-		postRedislay = true;
 		break;
 	default:
 		break;
