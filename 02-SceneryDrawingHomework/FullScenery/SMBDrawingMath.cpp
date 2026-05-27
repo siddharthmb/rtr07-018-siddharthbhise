@@ -22,7 +22,7 @@ void drawCircle(float h, float v, float r)
 		float z = 0.0f;
 		for (float i = 0.0f; i < 2.0f; i = i + 0.01f)
 		{
-			float theta = i * M_PI; // 0 to 2*M_PI
+			float theta = i * M_PI;
 
 			float x = r * cos(theta);
 			float y = r * sin(theta);
@@ -42,7 +42,6 @@ void drawVerticalQuad(float x1, float x2, float yStart, float z, float width)
 			glVertex3f(x1, i, z);
 			glVertex3f(x2, i, z);
 		}
-
 	}
 	glEnd();
 }

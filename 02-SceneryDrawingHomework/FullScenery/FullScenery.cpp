@@ -51,7 +51,7 @@ void initCurrentHourFromTime(void)
 	GetLocalTime(&st);
 	// setting this global var here so that same value is reflected in all funcs that need to draw based on Time of Day.
 	currentHour = ((unsigned int)st.wHour);
-	currentHour = 21;
+	//currentHour = 21;
 }
 
 void initColorSchemesForCurrentHour(void)
