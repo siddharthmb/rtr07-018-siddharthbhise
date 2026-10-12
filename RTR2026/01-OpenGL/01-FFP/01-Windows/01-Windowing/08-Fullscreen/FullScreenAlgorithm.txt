@@ -1,0 +1,19 @@
+
+/* 
+    Algorithm to make the the program run in fullscreen.
+    ---------------------------------------------------
+    1. Make our window using extended style to (and so that,) hide the taskbar; also, set window styles accordingly
+    2. Check whether are we already in fullscreen or not; if NOT, 
+        2a. Get the current window style
+        2b. Check if this style contains WS_OVERLAPPEDWINDOW, if YES,
+            2b_a. Get current window placement
+            2b_b. Get current monitor information
+            2b_c. If both the above (window placement, monitor info) obtained, then,
+                  remove WS_OVERLAPPEDWINDOW style from the current style
+            2b_d. Set window position to the obtained current monitor info dimensions
+        2c. Usually in fullscreen, cursor is hidden, so we hide the cursor
+    3. But if, window is already full screen; then
+        3a. Add WS_OVERLAPPEDWINDOW to the style
+        3b. Set the window placement to the original dimension (the dimension before fullscreen)
+        3c. Set the window position accordingly and start to show the cursor if hidden or which was hidden
+*/

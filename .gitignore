@@ -1,0 +1,7 @@
+*.exe
+*.obj
+*vs*
+*vscode*
+*.res
+Log.txt
+
