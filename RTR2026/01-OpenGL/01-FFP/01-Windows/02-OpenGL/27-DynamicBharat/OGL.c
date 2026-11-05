@@ -1,5 +1,6 @@
 // header files
 #include <windows.h>
+#include <mmsystem.h>
 #include <stdio.h>  // for file I/O
 #include <stdlib.h> // for exit()
 // math header
@@ -10,10 +11,13 @@
 #include <gl/GLU.h>
 // our headers
 #include "OGL.h"
+#include "SceneEnumerations.h"
+#include "E_TimerFunctions.h"
 
 // link with OpenGL import library
 #pragma comment(lib, "OpenGL32.lib")
 #pragma comment(lib, "GLU32.lib")
+#pragma comment(lib, "winmm.lib")
 
 // macros
 #define WIN_WIDTH   800
@@ -21,6 +25,7 @@
 
 // global function declarations
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+void toggleFullscreen(void);
 
 // global variable declarations
 FILE *gpFile = NULL;
@@ -37,6 +42,21 @@ HGLRC ghrc;
 float angleCube = 0.0f;
 float anglePyramid = 0.0f;
 float angleRotation = 0.0f;
+// for testAngles
+float testAngle = 0.0f;
+
+// for time tracking (E_TimerFunctions)
+float seconds = 0;
+
+// for scene tracking
+Scene_t currentScene = SCENE_1;
+
+// for quadric
+GLUquadric *quadric = NULL;
+
+// for width and height of the window
+float gWidth = WIN_WIDTH;
+float gHeight = WIN_HEIGHT;
 
 // Entry point function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -143,6 +163,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
     SetForegroundWindow(hwnd);
     SetFocus(hwnd);
 
+    // make the window fullscreen right from start
+    if(bFullscreen == FALSE)
+    {
+        toggleFullscreen();
+        bFullscreen = TRUE;
+    }
+
     // game loop
     while(bDone == FALSE)
     {
@@ -183,7 +210,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
     // function declarations
     void resize(int width, int height);
     void uninitialize(void);
-    void toggleFullscreen(void);
 
     // code
     switch(iMsg)
@@ -202,7 +228,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
             bActiveWindow = FALSE;
         break;
         case WM_SIZE:
-            resize(LOWORD(lParam), HIWORD(lParam));
+            gWidth = LOWORD(lParam);
+            gHeight = HIWORD(lParam);
+            resize(gWidth, gHeight);
         break;
         case WM_KEYDOWN:
             switch(wParam)
@@ -309,12 +337,16 @@ int initialize(void)
     // function declarations
     void resize(int, int);
     void printGLInfo(void);
+    int initializePlanes(void);
 
     // variable declarations
     PIXELFORMATDESCRIPTOR pfd;
     int iPixelFormatIndex;
 
     // code
+    // timer params init
+    timerParamsInit();
+
     memset(&pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
     pfd.nSize      = sizeof(PIXELFORMATDESCRIPTOR);
     pfd.nVersion   = 1;
@@ -361,6 +393,15 @@ int initialize(void)
         return -5;
     }
 
+    // initialize quadric
+    quadric = gluNewQuadric();
+
+    if(initializePlanes() != 0)
+    {
+        fprintf(gpFile, "SMB:initialize(): Failed to initialize planes!\n");
+        return -6;
+    }
+
     // enable depth
     glShadeModel(GL_SMOOTH);
     glClearDepth(1.0f);
@@ -378,7 +419,7 @@ int initialize(void)
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     // warmup resize
-    resize(WIN_WIDTH, WIN_HEIGHT);   
+    // resize(WIN_WIDTH, WIN_HEIGHT);   
 
     return 0;
 }
@@ -405,6 +446,30 @@ void resize(int width, int height)
         nr,
         100.0f
     );
+
+    // ortho, kept sahaj
+    //if(width <= height)
+    //{
+    //    glOrtho(
+    //        -100.0f,
+    //        100.0f,
+    //        -100.0f * ((GLfloat)height / (GLfloat)width),
+    //        100.0f * ((GLfloat)height / (GLfloat)width),
+    //        -100.0f,
+    //        100.0f            
+    //    );
+    //}
+    //else
+    //{
+    //    glOrtho(
+    //        -100.0f * ((GLfloat)width / (GLfloat)height),
+    //        100.0f * ((GLfloat)width / (GLfloat)height),
+    //        -100.0f,
+    //        100.0f,
+    //        -100.0f,
+    //        100.0f
+    //    );
+    //}
 }
 
 void render(void)
@@ -419,36 +484,127 @@ void render(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    gluLookAt(
-        0.0f, 0.0f, 10.0f,
-        2.0f + sinf(angleCube * M_PI / 180.0f), 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f
-    );
-
-    glPushMatrix();
-    {
-        glTranslatef(0.0f, 0.0f, -6.0f);
-        // glScalef(0.07f, 0.25f, 0.25f);
-        // glRotatef(angleCube, 1.0f, 1.0f, 1.0f);
-        drawCube();
-    }
-    glPopMatrix();
+    draw_bharat();
+    if(currentScene == SCENE_2) draw_plane();
 
     // do double buffering
     SwapBuffers(ghdc);
 }
 
+
+void update(void)
+{
+    // function declarations
+    void updatePlanes(void);
+
+    // variable declarations
+    static BOOL bNeedPlayAudio = TRUE;
+
+    // code
+    seconds = getTotalElapsedTimeInSeconds();
+
+    if(seconds >= 16.87f && bNeedPlayAudio)
+    {
+        PlaySound(TEXT("JaiHindKiSena.wav"), NULL, SND_FILENAME | SND_ASYNC);
+        bNeedPlayAudio = FALSE;
+    }
+
+    // update current scene
+    if(seconds >= SCENE_1_TIME_MARK && seconds < SCENE_2_TIME_MARK) currentScene = SCENE_1;
+    else if(seconds >= SCENE_2_TIME_MARK && seconds < SCENE_3_TIME_MARK) currentScene = SCENE_2;
+    else
+    {
+        currentScene = SCENE_3;
+        bEscapeKeyIsPressed = TRUE;
+    }
+
+    // update planes only if scene 2
+    if(currentScene == SCENE_2) updatePlanes();
+
+    // update test angle
+    testAngle = testAngle + 0.3f;
+    if(testAngle >= 360.0f) testAngle = 0.0f;
+}
+
+void uninitialize(void)
+{
+    // function declarations
+    void uninitializePlanes(void);
+
+    // code
+    // if exiting in fullscreen, first restore to original size and then proceed...
+    if(bFullscreen == TRUE)
+    {
+        toggleFullscreen();
+        bFullscreen = FALSE;
+    }
+
+    // first check the current context and if it is,
+    // un-make it...
+    if(wglGetCurrentContext() == ghrc)
+    {
+        wglMakeCurrent(NULL, NULL);
+    }
+
+    // now, destroy the rendering context
+    if(ghrc)
+    {
+        wglDeleteContext(ghrc);
+        ghrc = NULL;
+    }
+
+    // now, delete the device context
+    if(ghdc)
+    {
+        ReleaseDC(ghwnd, ghdc);
+        ghdc = NULL;
+    }
+
+    uninitializePlanes();
+
+    // delete quadric
+    if(quadric)
+    {
+        gluDeleteQuadric(quadric);
+        quadric = NULL;
+    }
+
+    // destroy the window
+    if(ghwnd)
+    {
+        DestroyWindow(ghwnd);
+        ghwnd = NULL;
+    }
+
+    // close the log file
+    if(gpFile)
+    {
+        fprintf(gpFile, "SMB:uninitialize(): Program terminated successfully!\n");
+        fclose(gpFile);
+        gpFile = NULL;
+    }
+}
+
+void printGLInfo(void)
+{
+    // code
+    fprintf(gpFile, "\tOpenGL Vendor   : %s\n", glGetString(GL_VENDOR));
+    fprintf(gpFile, "\tOpenGL Renderer : %s\n", glGetString(GL_RENDERER));
+    fprintf(gpFile, "\tOpenGL Version  : %s\n", glGetString(GL_VERSION));
+}
+
+/*
 void drawCube(void)
 {
     // code
     // cube
-    /* la front - red, 
-       right - green,
-       back - blue,
-       left - cyan
-       top - yellow,
-       bottom - magenta
-    */
+    //   la front - red, 
+    //   right - green,
+    //   back - blue,
+    //   left - cyan
+    //   top - yellow,
+    //   bottom - magenta 
+
     glBegin(GL_QUADS);
     {
         // front
@@ -542,68 +698,4 @@ void drawPyramid(void)
     glEnd();
 }
 
-
-void update(void)
-{
-    // code
-    anglePyramid = anglePyramid + 1.0f;
-    if(anglePyramid > 360) anglePyramid = 0.0f;
-
-    angleCube = angleCube + 0.01f;
-    if(angleCube > 360) angleCube = 0.0f;
-}
-
-void uninitialize(void)
-{
-    // code
-    // if exiting in fullscreen, first restore to original size and then proceed...
-    if(bFullscreen == TRUE)
-    {
-        toggleFullscreen();
-        bFullscreen = FALSE;
-    }
-
-    // first check the current context and if it is,
-    // un-make it...
-    if(wglGetCurrentContext() == ghrc)
-    {
-        wglMakeCurrent(NULL, NULL);
-    }
-
-    // now, destroy the rendering context
-    if(ghrc)
-    {
-        wglDeleteContext(ghrc);
-        ghrc = NULL;
-    }
-
-    // now, delete the device context
-    if(ghdc)
-    {
-        ReleaseDC(ghwnd, ghdc);
-        ghdc = NULL;
-    }
-
-    // destroy the window
-    if(ghwnd)
-    {
-        DestroyWindow(ghwnd);
-        ghwnd = NULL;
-    }
-
-    // close the log file
-    if(gpFile)
-    {
-        fprintf(gpFile, "SMB:uninitialize(): Program terminated successfully!\n");
-        fclose(gpFile);
-        gpFile = NULL;
-    }
-}
-
-void printGLInfo(void)
-{
-    // code
-    fprintf(gpFile, "\tOpenGL Vendor   : %s\n", glGetString(GL_VENDOR));
-    fprintf(gpFile, "\tOpenGL Renderer : %s\n", glGetString(GL_RENDERER));
-    fprintf(gpFile, "\tOpenGL Version  : %s\n", glGetString(GL_VERSION));
-}
+*/
